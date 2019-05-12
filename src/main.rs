@@ -1,19 +1,15 @@
-#[macro_use]
-extern crate lambda_runtime as lambda;
-#[macro_use]
+extern crate lambda_runtime;
 extern crate serde_derive;
-#[macro_use]
-extern crate log;
-extern crate simple_logger;
+extern crate simple_error;
 
-use lambda::error::HandlerError;
-
-use std::error::Error;
+use lambda_runtime::{error::HandlerError, lambda, Context};
+use serde_derive::{Deserialize, Serialize};
+use simple_error::bail;
 
 #[derive(Deserialize, Clone)]
 struct CustomEvent {
-    #[serde(rename = "firstName")]
     first_name: String,
+    last_name: Option<String>,
 }
 
 #[derive(Serialize, Clone)]
@@ -21,17 +17,13 @@ struct CustomOutput {
     message: String,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    simple_logger::init_with_level(log::Level::Info)?;
+fn main() {
     lambda!(my_handler);
-
-    Ok(())
 }
 
-fn my_handler(e: CustomEvent, c: lambda::Context) -> Result<CustomOutput, HandlerError> {
+fn my_handler(e: CustomEvent, _ctx: Context) -> Result<CustomOutput, HandlerError> {
     if e.first_name.is_empty() {
-        error!("Empty first name in request {}", c.aws_request_id);
-        return Err(HandlerError::from("Empty first name"));
+        bail!("Empty first name!");
     }
 
     Ok(CustomOutput {
